@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:shadcn_ui/src/components/focused.dart';
+import 'package:flutter/services.dart';
+import 'package:shadcn_ui/src/raw_components/focusable.dart';
 import 'package:shadcn_ui/src/theme/components/button.dart';
 import 'package:shadcn_ui/src/theme/components/decorator.dart';
 import 'package:shadcn_ui/src/theme/data.dart';
@@ -41,8 +42,6 @@ class ShadButton extends StatefulWidget {
     this.hoverBackgroundColor,
     this.foregroundColor,
     this.hoverForegroundColor,
-    this.border,
-    this.borderRadius,
     this.autofocus = false,
     this.focusNode,
     this.pressedBackgroundColor,
@@ -89,8 +88,6 @@ class ShadButton extends StatefulWidget {
     this.hoverBackgroundColor,
     this.foregroundColor,
     this.hoverForegroundColor,
-    this.border,
-    this.borderRadius,
     this.autofocus = false,
     this.focusNode,
     this.pressedBackgroundColor,
@@ -136,8 +133,6 @@ class ShadButton extends StatefulWidget {
     this.hoverBackgroundColor,
     this.foregroundColor,
     this.hoverForegroundColor,
-    this.border,
-    this.borderRadius,
     this.autofocus = false,
     this.focusNode,
     this.pressedBackgroundColor,
@@ -183,8 +178,6 @@ class ShadButton extends StatefulWidget {
     this.hoverBackgroundColor,
     this.foregroundColor,
     this.hoverForegroundColor,
-    this.border,
-    this.borderRadius,
     this.autofocus = false,
     this.focusNode,
     this.pressedBackgroundColor,
@@ -230,8 +223,6 @@ class ShadButton extends StatefulWidget {
     this.hoverBackgroundColor,
     this.foregroundColor,
     this.hoverForegroundColor,
-    this.border,
-    this.borderRadius,
     this.autofocus = false,
     this.focusNode,
     this.pressedBackgroundColor,
@@ -277,8 +268,6 @@ class ShadButton extends StatefulWidget {
     this.hoverBackgroundColor,
     this.foregroundColor,
     this.hoverForegroundColor,
-    this.border,
-    this.borderRadius,
     this.autofocus = false,
     this.focusNode,
     this.pressedBackgroundColor,
@@ -323,8 +312,6 @@ class ShadButton extends StatefulWidget {
     this.hoverBackgroundColor,
     this.foregroundColor,
     this.hoverForegroundColor,
-    this.border,
-    this.borderRadius,
     this.autofocus = false,
     this.focusNode,
     this.pressedBackgroundColor,
@@ -371,8 +358,6 @@ class ShadButton extends StatefulWidget {
   final Color? hoverBackgroundColor;
   final Color? foregroundColor;
   final Color? hoverForegroundColor;
-  final BoxBorder? border;
-  final BorderRadius? borderRadius;
   final bool autofocus;
   final FocusNode? focusNode;
   final Color? pressedBackgroundColor;
@@ -443,6 +428,12 @@ class _ShadButtonState extends State<ShadButton> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.enabled != widget.enabled) {
       statesController.update(ShadState.disabled, !widget.enabled);
+    }
+    if (oldWidget.focusNode != null && widget.focusNode == null) {
+      oldWidget.focusNode!.removeListener(onFocusChange);
+      _focusNode?.dispose();
+      _focusNode = FocusNode();
+      focusNode.addListener(onFocusChange);
     }
   }
 
@@ -593,14 +584,6 @@ class _ShadButtonState extends State<ShadButton> {
     return widget.textDecoration ?? buttonTheme(theme).textDecoration;
   }
 
-  BoxBorder? border(ShadThemeData theme) {
-    return widget.border ?? buttonTheme(theme).border;
-  }
-
-  BorderRadius borderRadius(ShadThemeData theme) {
-    return widget.borderRadius ?? buttonTheme(theme).radius ?? theme.radius;
-  }
-
   MouseCursor cursor(ShadThemeData theme) {
     if (widget.cursor != null) return widget.cursor!;
     return (widget.enabled
@@ -614,6 +597,12 @@ class _ShadButtonState extends State<ShadButton> {
 
   List<BoxShadow>? shadows(ShadThemeData theme) {
     return widget.shadows ?? buttonTheme(theme).shadows;
+  }
+
+  void onTap() {
+    if (widget.onPressed == null) return;
+    if (!focusNode.hasFocus) FocusScope.of(context).unfocus();
+    widget.onPressed!();
   }
 
   @override
@@ -632,7 +621,8 @@ class _ShadButtonState extends State<ShadButton> {
         theme.primaryButtonTheme.applyIconColorFilter;
 
     final effectiveDecoration =
-        widget.decoration ?? buttonTheme(theme).decoration ?? theme.decoration;
+        (buttonTheme(theme).decoration ?? const ShadDecoration())
+            .mergeWith(widget.decoration);
 
     final effectiveMainAxisAlignment = widget.mainAxisAlignment ??
         buttonTheme(theme).mainAxisAlignment ??
@@ -649,130 +639,130 @@ class _ShadButtonState extends State<ShadButton> {
         buttonTheme(theme).hoverStrategies ??
         theme.hoverStrategies;
 
-    return ValueListenableBuilder(
-      valueListenable: statesController,
-      builder: (context, states, _) {
-        final pressed = states.contains(ShadState.pressed);
-        final hovered = states.contains(ShadState.hovered);
-        final enabled = !states.contains(ShadState.disabled);
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.enter): onTap,
+      },
+      child: ValueListenableBuilder(
+        valueListenable: statesController,
+        builder: (context, states, _) {
+          final pressed = states.contains(ShadState.pressed);
+          final hovered = states.contains(ShadState.hovered);
+          final enabled = !states.contains(ShadState.disabled);
 
-        // Applies the foreground color filter to the icon if provided
-        var icon = widget.icon;
-        if (icon != null && applyIconColorFilter) {
-          icon = ColorFiltered(
-            colorFilter: ColorFilter.mode(
-              hasPressedForegroundColor && pressed
-                  ? pressedForegroundColor(theme)
-                  : hovered
-                      ? hoverForeground(theme)
-                      : foreground(theme),
-              BlendMode.srcIn,
-            ),
-            child: icon,
+          final updatedDecoration = effectiveDecoration.copyWith(
+            color: hasPressedBackgroundColor && pressed
+                ? pressedBackgroundColor(theme)
+                : hovered
+                    ? hoverBackground(theme)
+                    : background(theme),
+            gradient: gradient(theme),
+            shadows: shadows(theme),
           );
-        }
-        return Semantics(
-          container: true,
-          button: true,
-          focusable: enabled,
-          enabled: enabled,
-          child: Opacity(
-            opacity: enabled ? 1 : .5,
-            child: AbsorbPointer(
-              absorbing: !enabled,
-              child: ShadFocused(
-                canRequestFocus: enabled,
-                autofocus: widget.autofocus,
-                focusNode: focusNode,
-                builder: (context, focused, child) => ShadDecorator(
-                  decoration: effectiveDecoration,
-                  focused: focused,
-                  child: child!,
-                ),
-                child: ShadGestureDetector(
-                  onHoverChange: (value) {
-                    statesController.update(ShadState.hovered, value);
-                  },
-                  hoverStrategies: effectiveHoverStrategies,
-                  cursor: cursor(theme),
-                  onLongPress: widget.onLongPress,
-                  onTap: widget.onPressed == null
-                      ? null
-                      : () {
-                          if (!focusNode.hasFocus) {
-                            FocusScope.of(context).unfocus();
-                          }
-                          widget.onPressed!();
-                        },
-                  onTapDown: (details) {
-                    statesController.update(ShadState.pressed, true);
-                    widget.onTapDown?.call(details);
-                  },
-                  onTapUp: (details) {
-                    statesController.update(ShadState.pressed, false);
-                    widget.onTapUp?.call(details);
-                  },
-                  onTapCancel: () {
-                    statesController.update(ShadState.pressed, false);
-                    widget.onTapCancel?.call();
-                  },
-                  onDoubleTap: widget.onDoubleTap,
-                  onDoubleTapDown: widget.onDoubleTapDown,
-                  onDoubleTapCancel: widget.onDoubleTapCancel,
-                  onLongPressCancel: widget.onLongPressCancel,
-                  onLongPressEnd: widget.onLongPressEnd,
-                  onLongPressUp: widget.onLongPressUp,
-                  onLongPressDown: widget.onLongPressDown,
-                  onLongPressStart: widget.onLongPressStart,
-                  longPressDuration: effectiveLongPressDuration,
-                  child: Container(
-                    height: height(theme),
-                    width: width(theme),
-                    decoration: BoxDecoration(
-                      color: hasPressedBackgroundColor && pressed
-                          ? pressedBackgroundColor(theme)
-                          : hovered
-                              ? hoverBackground(theme)
-                              : background(theme),
-                      borderRadius: borderRadius(theme),
-                      border: border(theme),
-                      gradient: gradient(theme),
-                      boxShadow: shadows(theme),
-                    ),
-                    padding: padding(theme),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: effectiveCrossAxisAlignment,
-                      mainAxisAlignment: effectiveMainAxisAlignment,
-                      children: [
-                        if (icon != null) icon,
-                        if (widget.text != null)
-                          DefaultTextStyle(
-                            style: theme.textTheme.small.copyWith(
-                              color: hasPressedForegroundColor && pressed
-                                  ? pressedForegroundColor(theme)
-                                  : hovered
-                                      ? hoverForeground(theme)
-                                      : foreground(theme),
-                              decoration: textDecoration(
-                                theme,
-                                hovered: hovered,
+
+          // Applies the foreground color filter to the icon if provided
+          var icon = widget.icon;
+          if (icon != null && applyIconColorFilter) {
+            icon = ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                hasPressedForegroundColor && pressed
+                    ? pressedForegroundColor(theme)
+                    : hovered
+                        ? hoverForeground(theme)
+                        : foreground(theme),
+                BlendMode.srcIn,
+              ),
+              child: icon,
+            );
+          }
+          return Semantics(
+            container: true,
+            button: true,
+            focusable: enabled,
+            enabled: enabled,
+            child: Opacity(
+              opacity: enabled ? 1 : .5,
+              child: AbsorbPointer(
+                absorbing: !enabled,
+                child: ShadFocusable(
+                  canRequestFocus: enabled,
+                  autofocus: widget.autofocus,
+                  focusNode: focusNode,
+                  builder: (context, focused, child) => ShadDecorator(
+                    decoration: updatedDecoration,
+                    focused: focused,
+                    child: child,
+                  ),
+                  child: ShadGestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHoverChange: (value) {
+                      statesController.update(ShadState.hovered, value);
+                    },
+                    hoverStrategies: effectiveHoverStrategies,
+                    cursor: cursor(theme),
+                    onLongPress: widget.onLongPress,
+                    onTap: widget.onPressed == null ? null : onTap,
+                    onTapDown: (details) {
+                      statesController.update(ShadState.pressed, true);
+                      widget.onTapDown?.call(details);
+                    },
+                    onTapUp: (details) {
+                      statesController.update(ShadState.pressed, false);
+                      widget.onTapUp?.call(details);
+                    },
+                    onTapCancel: () {
+                      statesController.update(ShadState.pressed, false);
+                      widget.onTapCancel?.call();
+                    },
+                    onDoubleTap: widget.onDoubleTap,
+                    onDoubleTapDown: widget.onDoubleTapDown,
+                    onDoubleTapCancel: widget.onDoubleTapCancel,
+                    onLongPressCancel: widget.onLongPressCancel,
+                    onLongPressEnd: widget.onLongPressEnd,
+                    onLongPressUp: widget.onLongPressUp,
+                    onLongPressDown: widget.onLongPressDown,
+                    onLongPressStart: widget.onLongPressStart,
+                    longPressDuration: effectiveLongPressDuration,
+                    child: SizedBox(
+                      height: height(theme),
+                      width: width(theme),
+                      child: Padding(
+                        padding: padding(theme),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: effectiveCrossAxisAlignment,
+                          mainAxisAlignment: effectiveMainAxisAlignment,
+                          children: [
+                            if (icon != null) icon,
+                            if (widget.text != null)
+                              DefaultTextStyle(
+                                style: theme.textTheme.small.copyWith(
+                                  color: hasPressedForegroundColor && pressed
+                                      ? pressedForegroundColor(theme)
+                                      : hovered
+                                          ? hoverForeground(theme)
+                                          : foreground(theme),
+                                  decoration: textDecoration(
+                                    theme,
+                                    hovered: hovered,
+                                  ),
+                                  decorationColor: foreground(theme),
+                                  decorationStyle: TextDecorationStyle.solid,
+                                ),
+                                textAlign: TextAlign.center,
+                                child: widget.text!,
                               ),
-                              decorationColor: foreground(theme),
-                              decorationStyle: TextDecorationStyle.solid,
-                            ),
-                            textAlign: TextAlign.center,
-                            child: widget.text!,
-                          ),
-                      ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

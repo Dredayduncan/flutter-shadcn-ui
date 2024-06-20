@@ -1,19 +1,21 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shadcn_ui/src/theme/theme.dart';
 
 @immutable
 class ShadBorder {
   const ShadBorder({
+    this.merge = true,
     this.width,
     this.color,
     this.radius,
     this.padding,
   });
 
-  static const ShadBorder none = ShadBorder();
+  static const ShadBorder none = ShadBorder(merge: false);
 
   /// The width of the border, defaults to 1.0.
   final double? width;
@@ -26,6 +28,9 @@ class ShadBorder {
 
   /// The padding of the border, defaults to null.
   final EdgeInsets? padding;
+
+  /// Whether to merge with another border, defaults to true.
+  final bool merge;
 
   static ShadBorder? lerp(
     ShadBorder? a,
@@ -55,6 +60,17 @@ class ShadBorder {
     );
   }
 
+  ShadBorder mergeWith(ShadBorder? other) {
+    if (other == null) return this;
+    if (!other.merge) return other;
+    return copyWith(
+      width: other.width ?? width,
+      color: other.color ?? color,
+      radius: other.radius ?? radius,
+      padding: other.padding ?? padding,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -78,15 +94,24 @@ class ShadDecoration {
     this.merge = true,
     this.border,
     this.focusedBorder,
+    this.errorBorder,
+    this.secondaryBorder,
+    this.secondaryFocusedBorder,
+    this.secondaryErrorBorder,
     this.labelStyle,
     this.errorLabelStyle,
     this.errorStyle,
     this.descriptionStyle,
     this.labelPadding,
-    this.placeholderStyle,
     this.descriptionPadding,
     this.errorPadding,
-    this.placeholderAlignment,
+    this.fallbackToBorder,
+    this.color,
+    this.image,
+    this.shadows,
+    this.gradient,
+    this.backgroundBlendMode,
+    this.shape,
   });
 
   static const ShadDecoration none = ShadDecoration(merge: false);
@@ -96,13 +121,27 @@ class ShadDecoration {
   final TextStyle? errorLabelStyle;
   final ShadBorder? border;
   final ShadBorder? focusedBorder;
+  final ShadBorder? errorBorder;
+  final ShadBorder? secondaryBorder;
+  final ShadBorder? secondaryFocusedBorder;
+  final ShadBorder? secondaryErrorBorder;
   final TextStyle? errorStyle;
-  final TextStyle? placeholderStyle;
   final TextStyle? descriptionStyle;
   final EdgeInsets? labelPadding;
   final EdgeInsets? descriptionPadding;
   final EdgeInsets? errorPadding;
-  final AlignmentGeometry? placeholderAlignment;
+  final Color? color;
+  final DecorationImage? image;
+  final List<BoxShadow>? shadows;
+  final Gradient? gradient;
+  final BlendMode? backgroundBlendMode;
+  final BoxShape? shape;
+
+  /// Whether to fallback to the [border] if no [focusedBorder] or [errorBorder]
+  /// is provided, defaults to true.
+  ///
+  /// This also affects the [secondaryBorder] with the same conditions.
+  final bool? fallbackToBorder;
 
   static ShadDecoration? lerp(
     ShadDecoration? a,
@@ -113,6 +152,16 @@ class ShadDecoration {
     return ShadDecoration(
       border: ShadBorder.lerp(a?.border, b?.border, t),
       focusedBorder: ShadBorder.lerp(a?.focusedBorder, b?.focusedBorder, t),
+      errorBorder: ShadBorder.lerp(a?.errorBorder, b?.errorBorder, t),
+      secondaryBorder:
+          ShadBorder.lerp(a?.secondaryBorder, b?.secondaryBorder, t),
+      secondaryFocusedBorder: ShadBorder.lerp(
+        a?.secondaryFocusedBorder,
+        b?.secondaryFocusedBorder,
+        t,
+      ),
+      secondaryErrorBorder:
+          ShadBorder.lerp(a?.secondaryErrorBorder, b?.secondaryErrorBorder, t),
       labelStyle: TextStyle.lerp(a?.labelStyle, b?.labelStyle, t),
       errorLabelStyle:
           TextStyle.lerp(a?.errorLabelStyle, b?.errorLabelStyle, t),
@@ -123,13 +172,14 @@ class ShadDecoration {
       descriptionPadding:
           EdgeInsets.lerp(a?.descriptionPadding, b?.descriptionPadding, t),
       errorPadding: EdgeInsets.lerp(a?.errorPadding, b?.errorPadding, t),
-      placeholderStyle:
-          TextStyle.lerp(a?.placeholderStyle, b?.placeholderStyle, t),
-      placeholderAlignment: AlignmentGeometry.lerp(
-        a?.placeholderAlignment,
-        b?.placeholderAlignment,
-        t,
-      ),
+      fallbackToBorder: t < 0.5 ? a?.fallbackToBorder : b?.fallbackToBorder,
+      color: Color.lerp(a?.color, b?.color, t),
+      image: DecorationImage.lerp(a?.image, b?.image, t),
+      shadows: BoxShadow.lerpList(a?.shadows, b?.shadows, t),
+      gradient: Gradient.lerp(a?.gradient, b?.gradient, t),
+      backgroundBlendMode:
+          t < 0.5 ? a?.backgroundBlendMode : b?.backgroundBlendMode,
+      shape: t < 0.5 ? a?.shape : b?.shape,
     );
   }
 
@@ -137,8 +187,19 @@ class ShadDecoration {
     if (other == null) return this;
     if (!other.merge) return other;
     return copyWith(
-      border: other.border ?? border,
-      focusedBorder: other.focusedBorder ?? focusedBorder,
+      border: border?.mergeWith(other.border) ?? other.border,
+      focusedBorder:
+          focusedBorder?.mergeWith(other.focusedBorder) ?? other.focusedBorder,
+      errorBorder:
+          errorBorder?.mergeWith(other.errorBorder) ?? other.errorBorder,
+      secondaryBorder: secondaryBorder?.mergeWith(other.secondaryBorder) ??
+          other.secondaryBorder,
+      secondaryFocusedBorder:
+          secondaryFocusedBorder?.mergeWith(other.secondaryFocusedBorder) ??
+              other.secondaryFocusedBorder,
+      secondaryErrorBorder:
+          secondaryErrorBorder?.mergeWith(other.secondaryErrorBorder) ??
+              other.secondaryErrorBorder,
       labelStyle: other.labelStyle ?? labelStyle,
       errorLabelStyle: other.errorLabelStyle ?? errorLabelStyle,
       errorStyle: other.errorStyle ?? errorStyle,
@@ -146,14 +207,23 @@ class ShadDecoration {
       labelPadding: other.labelPadding ?? labelPadding,
       descriptionPadding: other.descriptionPadding ?? descriptionPadding,
       errorPadding: other.errorPadding ?? errorPadding,
-      placeholderStyle: other.placeholderStyle ?? placeholderStyle,
-      placeholderAlignment: other.placeholderAlignment ?? placeholderAlignment,
+      fallbackToBorder: other.fallbackToBorder ?? fallbackToBorder,
+      color: other.color ?? color,
+      shape: other.shape ?? shape,
+      backgroundBlendMode: other.backgroundBlendMode ?? backgroundBlendMode,
+      shadows: other.shadows ?? shadows,
+      gradient: other.gradient ?? gradient,
+      image: other.image ?? image,
     );
   }
 
   ShadDecoration copyWith({
     ShadBorder? border,
     ShadBorder? focusedBorder,
+    ShadBorder? errorBorder,
+    ShadBorder? secondaryBorder,
+    ShadBorder? secondaryFocusedBorder,
+    ShadBorder? secondaryErrorBorder,
     TextStyle? labelStyle,
     TextStyle? errorLabelStyle,
     TextStyle? errorStyle,
@@ -161,12 +231,22 @@ class ShadDecoration {
     EdgeInsets? labelPadding,
     EdgeInsets? descriptionPadding,
     EdgeInsets? errorPadding,
-    TextStyle? placeholderStyle,
-    AlignmentGeometry? placeholderAlignment,
+    bool? fallbackToBorder,
+    Color? color,
+    BoxShape? shape,
+    BlendMode? backgroundBlendMode,
+    List<BoxShadow>? shadows,
+    Gradient? gradient,
+    DecorationImage? image,
   }) {
     return ShadDecoration(
       border: border ?? this.border,
       focusedBorder: focusedBorder ?? this.focusedBorder,
+      errorBorder: errorBorder ?? this.errorBorder,
+      secondaryBorder: secondaryBorder ?? this.secondaryBorder,
+      secondaryFocusedBorder:
+          secondaryFocusedBorder ?? this.secondaryFocusedBorder,
+      secondaryErrorBorder: secondaryErrorBorder ?? this.secondaryErrorBorder,
       labelStyle: labelStyle ?? this.labelStyle,
       errorLabelStyle: errorLabelStyle ?? this.errorLabelStyle,
       errorStyle: errorStyle ?? this.errorStyle,
@@ -174,8 +254,13 @@ class ShadDecoration {
       labelPadding: labelPadding ?? this.labelPadding,
       descriptionPadding: descriptionPadding ?? this.descriptionPadding,
       errorPadding: errorPadding ?? this.errorPadding,
-      placeholderStyle: placeholderStyle ?? this.placeholderStyle,
-      placeholderAlignment: placeholderAlignment ?? this.placeholderAlignment,
+      fallbackToBorder: fallbackToBorder ?? this.fallbackToBorder,
+      color: color ?? this.color,
+      shape: shape ?? this.shape,
+      backgroundBlendMode: backgroundBlendMode ?? this.backgroundBlendMode,
+      shadows: shadows ?? this.shadows,
+      gradient: gradient ?? this.gradient,
+      image: image ?? this.image,
     );
   }
 
@@ -186,6 +271,10 @@ class ShadDecoration {
     return other is ShadDecoration &&
         other.border == border &&
         other.focusedBorder == focusedBorder &&
+        other.errorBorder == errorBorder &&
+        other.secondaryBorder == secondaryBorder &&
+        other.secondaryFocusedBorder == secondaryFocusedBorder &&
+        other.secondaryErrorBorder == secondaryErrorBorder &&
         other.labelStyle == labelStyle &&
         other.errorLabelStyle == errorLabelStyle &&
         other.errorStyle == errorStyle &&
@@ -193,14 +282,23 @@ class ShadDecoration {
         other.labelPadding == labelPadding &&
         other.descriptionPadding == descriptionPadding &&
         other.errorPadding == errorPadding &&
-        other.placeholderStyle == placeholderStyle &&
-        other.placeholderAlignment == placeholderAlignment;
+        other.fallbackToBorder == fallbackToBorder &&
+        other.color == color &&
+        other.shape == shape &&
+        other.backgroundBlendMode == backgroundBlendMode &&
+        other.shadows == shadows &&
+        other.gradient == gradient &&
+        other.image == image;
   }
 
   @override
   int get hashCode =>
       border.hashCode ^
       focusedBorder.hashCode ^
+      errorBorder.hashCode ^
+      secondaryBorder.hashCode ^
+      secondaryFocusedBorder.hashCode ^
+      secondaryErrorBorder.hashCode ^
       labelStyle.hashCode ^
       errorLabelStyle.hashCode ^
       errorStyle.hashCode ^
@@ -208,26 +306,29 @@ class ShadDecoration {
       labelPadding.hashCode ^
       descriptionPadding.hashCode ^
       errorPadding.hashCode ^
-      placeholderStyle.hashCode ^
-      placeholderAlignment.hashCode;
+      fallbackToBorder.hashCode ^
+      color.hashCode ^
+      shape.hashCode ^
+      backgroundBlendMode.hashCode ^
+      shadows.hashCode ^
+      gradient.hashCode ^
+      image.hashCode;
 }
 
 class ShadDecorator extends StatelessWidget {
   const ShadDecorator({
     super.key,
-    required this.child,
+    this.child,
     this.decoration,
     this.hasError = false,
     this.focused = false,
-    this.isEmpty = false,
     this.label,
     this.error,
     this.description,
-    this.placeholder,
   });
 
   /// The child to decorate.
-  final Widget child;
+  final Widget? child;
 
   /// The decoration to apply to the child.
   final ShadDecoration? decoration;
@@ -235,24 +336,54 @@ class ShadDecorator extends StatelessWidget {
   /// Whether the child has focus, defaults to false.
   final bool focused;
 
-  final bool isEmpty;
-
   final bool hasError;
 
   final Widget? label;
 
   final Widget? error;
   final Widget? description;
-  final Widget? placeholder;
 
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
 
     final effectiveDecoration = theme.decoration.mergeWith(decoration);
-    final border = focused
-        ? effectiveDecoration.focusedBorder
-        : effectiveDecoration.border;
+
+    final effectiveFallbackToBorder =
+        effectiveDecoration.fallbackToBorder ?? true;
+
+    var border = switch (hasError) {
+      true => effectiveDecoration.errorBorder,
+      false => switch (focused) {
+          true => effectiveDecoration.focusedBorder,
+          false => effectiveDecoration.border,
+        }
+    };
+
+    if (effectiveFallbackToBorder) {
+      if (hasError && effectiveDecoration.errorBorder == null) {
+        border = effectiveDecoration.border;
+      } else if (focused && effectiveDecoration.focusedBorder == null) {
+        border = effectiveDecoration.border;
+      }
+    }
+
+    var secondaryBorder = switch (hasError) {
+      true => effectiveDecoration.secondaryErrorBorder,
+      false => switch (focused) {
+          true => effectiveDecoration.secondaryFocusedBorder,
+          false => effectiveDecoration.secondaryBorder,
+        }
+    };
+
+    if (effectiveFallbackToBorder) {
+      if (hasError && effectiveDecoration.secondaryErrorBorder == null) {
+        secondaryBorder = effectiveDecoration.secondaryBorder;
+      } else if (focused &&
+          effectiveDecoration.secondaryFocusedBorder == null) {
+        secondaryBorder = effectiveDecoration.secondaryBorder;
+      }
+    }
 
     final TextStyle effectiveLabelStyle;
     final effectiveErrorStyle = effectiveDecoration.errorStyle ??
@@ -275,13 +406,7 @@ class ShadDecorator extends StatelessWidget {
           );
     }
 
-    final effectivePlaceholderStyle =
-        effectiveDecoration.placeholderStyle ?? theme.textTheme.muted;
-
-    final effectivePlaceholderAlignment =
-        effectiveDecoration.placeholderAlignment ?? Alignment.topLeft;
-
-    return Container(
+    Widget decorated = Container(
       decoration: BoxDecoration(
         border: border?.width == null && border?.color == null
             ? null
@@ -289,7 +414,15 @@ class ShadDecorator extends StatelessWidget {
                 color: border?.color ?? Colors.black,
                 width: border?.width ?? 1.0,
               ),
-        borderRadius: border?.radius,
+        borderRadius: effectiveDecoration.shape == BoxShape.circle
+            ? null
+            : border?.radius,
+        color: effectiveDecoration.color,
+        shape: effectiveDecoration.shape ?? BoxShape.rectangle,
+        backgroundBlendMode: effectiveDecoration.backgroundBlendMode,
+        boxShadow: effectiveDecoration.shadows,
+        gradient: effectiveDecoration.gradient,
+        image: effectiveDecoration.image,
       ),
       padding: border?.padding,
       child: Column(
@@ -305,21 +438,7 @@ class ShadDecorator extends StatelessWidget {
                 child: label!,
               ),
             ),
-          Stack(
-            children: [
-              if (isEmpty && placeholder != null)
-                Positioned.fill(
-                  child: Align(
-                    alignment: effectivePlaceholderAlignment,
-                    child: DefaultTextStyle(
-                      style: effectivePlaceholderStyle,
-                      child: placeholder!,
-                    ),
-                  ),
-                ),
-              child,
-            ],
-          ),
+          if (child != null) child!,
           if (description != null)
             Padding(
               padding: effectiveDecoration.descriptionPadding ??
@@ -342,5 +461,23 @@ class ShadDecorator extends StatelessWidget {
         ],
       ),
     );
+
+    if (secondaryBorder != null && !theme.disableSecondaryBorder) {
+      decorated = Container(
+        decoration: BoxDecoration(
+          border: secondaryBorder.width == null && secondaryBorder.color == null
+              ? null
+              : Border.all(
+                  color: secondaryBorder.color ?? Colors.black,
+                  width: secondaryBorder.width ?? 1.0,
+                ),
+          borderRadius: secondaryBorder.radius,
+        ),
+        padding: secondaryBorder.padding,
+        child: decorated,
+      );
+    }
+
+    return decorated;
   }
 }

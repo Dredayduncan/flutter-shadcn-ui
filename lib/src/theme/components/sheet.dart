@@ -34,6 +34,10 @@ class ShadSheetTheme {
     this.descriptionTextAlign,
     this.animateIn,
     this.animateOut,
+    this.mainAxisAlignment,
+    this.crossAxisAlignment,
+    this.scrollable,
+    this.scrollPadding,
   });
 
   final bool merge;
@@ -60,6 +64,10 @@ class ShadSheetTheme {
   final TextAlign? descriptionTextAlign;
   final List<Effect<dynamic>>? animateIn;
   final List<Effect<dynamic>>? animateOut;
+  final MainAxisAlignment? mainAxisAlignment;
+  final CrossAxisAlignment? crossAxisAlignment;
+  final bool? scrollable;
+  final EdgeInsets? scrollPadding;
 
   static ShadSheetTheme lerp(
     ShadSheetTheme a,
@@ -93,6 +101,10 @@ class ShadSheetTheme {
       shadows: b.shadows,
       removeBorderRadiusWhenTiny: b.removeBorderRadiusWhenTiny,
       closeIcon: b.closeIcon,
+      mainAxisAlignment: t < 0.5 ? a.mainAxisAlignment : b.mainAxisAlignment,
+      crossAxisAlignment: t < 0.5 ? a.crossAxisAlignment : b.crossAxisAlignment,
+      scrollable: t < 0.5 ? a.scrollable : b.scrollable,
+      scrollPadding: EdgeInsets.lerp(a.scrollPadding, b.scrollPadding, t),
     );
   }
 
@@ -121,6 +133,10 @@ class ShadSheetTheme {
     TextAlign? descriptionTextAlign,
     List<Effect<dynamic>>? animateIn,
     List<Effect<dynamic>>? animateOut,
+    MainAxisAlignment? mainAxisAlignment,
+    CrossAxisAlignment? crossAxisAlignment,
+    bool? scrollable,
+    EdgeInsets? scrollPadding,
   }) {
     return ShadSheetTheme(
       merge: merge ?? this.merge,
@@ -151,6 +167,10 @@ class ShadSheetTheme {
       descriptionTextAlign: descriptionTextAlign ?? this.descriptionTextAlign,
       animateIn: animateIn ?? this.animateIn,
       animateOut: animateOut ?? this.animateOut,
+      mainAxisAlignment: mainAxisAlignment ?? this.mainAxisAlignment,
+      crossAxisAlignment: crossAxisAlignment ?? this.crossAxisAlignment,
+      scrollable: scrollable ?? this.scrollable,
+      scrollPadding: scrollPadding ?? this.scrollPadding,
     );
   }
 
@@ -178,6 +198,10 @@ class ShadSheetTheme {
       descriptionTextAlign: other.descriptionTextAlign,
       animateIn: other.animateIn,
       animateOut: other.animateOut,
+      mainAxisAlignment: other.mainAxisAlignment,
+      crossAxisAlignment: other.crossAxisAlignment,
+      scrollable: other.scrollable,
+      scrollPadding: other.scrollPadding,
     );
   }
 
@@ -209,7 +233,11 @@ class ShadSheetTheme {
         other.titleTextAlign == titleTextAlign &&
         other.descriptionTextAlign == descriptionTextAlign &&
         listEquals(other.animateIn, animateIn) &&
-        listEquals(other.animateOut, animateOut);
+        listEquals(other.animateOut, animateOut) &&
+        other.mainAxisAlignment == mainAxisAlignment &&
+        other.crossAxisAlignment == crossAxisAlignment &&
+        other.scrollable == scrollable &&
+        other.scrollPadding == scrollPadding;
   }
 
   @override
@@ -237,6 +265,10 @@ class ShadSheetTheme {
         titleTextAlign.hashCode ^
         descriptionTextAlign.hashCode ^
         animateIn.hashCode ^
-        animateOut.hashCode;
+        animateOut.hashCode ^
+        mainAxisAlignment.hashCode ^
+        crossAxisAlignment.hashCode ^
+        scrollable.hashCode ^
+        scrollPadding.hashCode;
   }
 }

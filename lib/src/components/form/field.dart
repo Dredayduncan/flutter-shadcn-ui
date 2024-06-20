@@ -23,7 +23,6 @@ class ShadFormBuilderField<T> extends FormField<T> {
     this.onChanged,
     this.valueTransformer,
     this.onReset,
-    this.decoration,
   }) : super(
           builder: (field) {
             final hasError = field.hasError;
@@ -32,7 +31,9 @@ class ShadFormBuilderField<T> extends FormField<T> {
                 hasError ? error ?? Text(field.errorText!) : null;
 
             return ShadDecorator(
-              decoration: decoration,
+              // The decoration is set to none because the component itself has
+              // its own decoration
+              decoration: ShadDecoration.none,
               label: label,
               hasError: hasError,
               error: effectiveError,
@@ -54,7 +55,6 @@ class ShadFormBuilderField<T> extends FormField<T> {
   final ValueChanged<T?>? onChanged;
   final ValueTransformer<T?>? valueTransformer;
   final VoidCallback? onReset;
-  final ShadDecoration? decoration;
 
   @override
   ShadFormBuilderFieldState<ShadFormBuilderField<T>, T> createState() =>

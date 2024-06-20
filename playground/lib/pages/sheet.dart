@@ -28,7 +28,9 @@ class SheetPage extends StatelessWidget {
                   onPressed: () => showShadSheet(
                     side: ShadSheetSide.right,
                     context: context,
-                    builder: (context) => const EditProfileSheet(),
+                    builder: (context) => const EditProfileSheet(
+                      side: ShadSheetSide.right,
+                    ),
                   ),
                 ),
               SheetStyle.side => Row(
@@ -100,47 +102,48 @@ final profile = [
 ];
 
 class EditProfileSheet extends StatelessWidget {
-  const EditProfileSheet({super.key, this.side});
+  const EditProfileSheet({
+    super.key,
+    required this.side,
+  });
 
-  final ShadSheetSide? side;
+  final ShadSheetSide side;
 
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
     return ShadSheet(
+      constraints: side == ShadSheetSide.left || side == ShadSheetSide.right
+          ? const BoxConstraints(maxWidth: 512)
+          : null,
       title: const Text('Edit Profile'),
       description: const Text(
           "Make changes to your profile here. Click save when you're done"),
-      content: SizedBox(
-        width: side == ShadSheetSide.bottom || side == ShadSheetSide.top
-            ? MediaQuery.sizeOf(context).width
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: profile
-                .map(
-                  (p) => Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          p.title,
-                          textAlign: TextAlign.end,
-                          style: theme.textTheme.small,
-                        ),
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: profile
+              .map(
+                (p) => Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        p.title,
+                        textAlign: TextAlign.end,
+                        style: theme.textTheme.small,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 3,
-                        child: ShadInput(initialValue: p.value),
-                      ),
-                    ],
-                  ),
-                )
-                .toList(),
-          ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 5,
+                      child: ShadInput(initialValue: p.value),
+                    ),
+                  ],
+                ),
+              )
+              .toList(),
         ),
       ),
       actions: const [

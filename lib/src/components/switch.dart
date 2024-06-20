@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shadcn_ui/src/components/disabled.dart';
-import 'package:shadcn_ui/src/components/focused.dart';
+import 'package:shadcn_ui/src/raw_components/focusable.dart';
 import 'package:shadcn_ui/src/theme/components/decorator.dart';
 import 'package:shadcn_ui/src/theme/theme.dart';
 import 'package:shadcn_ui/src/utils/debug_check.dart';
@@ -18,10 +19,10 @@ class ShadSwitch extends StatefulWidget {
     this.uncheckedTrackColor,
     this.checkedTrackColor,
     this.width,
+    this.height,
     this.margin,
     this.duration,
     this.decoration,
-    this.radius,
     this.direction,
     this.label,
     this.sublabel,
@@ -55,14 +56,14 @@ class ShadSwitch extends StatefulWidget {
   /// The width of the switch, defaults to 44.
   final double? width;
 
+  /// The height of the switch, defaults to 24.
+  final double? height;
+
   /// The margin of the switch, defaults to 2.
   final double? margin;
 
   /// The duration of the switch animation, defaults to 100ms.
   final Duration? duration;
-
-  /// The radius of the switch, defaults to 24.
-  final BorderRadius? radius;
 
   /// The decoration of the switch.
   final ShadDecoration? decoration;
@@ -114,13 +115,17 @@ class _ShadSwitchState extends State<ShadSwitch>
     super.dispose();
   }
 
+  void onTap() {
+    widget.onChanged!(!widget.value);
+    if (!focusNode.hasFocus) {
+      FocusScope.of(context).unfocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasShadTheme(context));
     final theme = ShadTheme.of(context);
-    final effectiveRadius = widget.radius ??
-        theme.switchTheme.radius ??
-        const BorderRadius.all(Radius.circular(24));
     final effectiveThumbColor = widget.thumbColor ??
         theme.switchTheme.thumbColor ??
         theme.colorScheme.background;
@@ -132,13 +137,21 @@ class _ShadSwitchState extends State<ShadSwitch>
         theme.colorScheme.primary;
     final effectiveWidth = widget.width ?? theme.switchTheme.width ?? 44;
     final effectiveMargin = widget.margin ?? theme.switchTheme.margin ?? 2;
-    final effectiveHeight = effectiveWidth * 0.54;
+    final effectiveHeight = widget.height ?? theme.switchTheme.height ?? 24;
     final effectiveThumbSize = effectiveHeight - effectiveMargin * 2;
     final transitionStep =
         effectiveWidth - effectiveMargin * 2 - effectiveThumbSize;
     final effectiveDuration = widget.duration ?? 100.milliseconds;
+
     final effectiveDecoration =
-        widget.decoration ?? theme.switchTheme.decoration ?? theme.decoration;
+        (theme.switchTheme.decoration ?? const ShadDecoration())
+            .mergeWith(widget.decoration)
+            .copyWith(
+              color: widget.value
+                  ? effectiveCheckedTrackColor
+                  : effectiveUncheckedTrackColor,
+            );
+
     final effectivePadding = widget.padding ??
         theme.switchTheme.padding ??
         const EdgeInsets.only(left: 8);
@@ -148,47 +161,53 @@ class _ShadSwitchState extends State<ShadSwitch>
       child: ShadDisabled(
         showForbiddenCursor: true,
         disabled: !widget.enabled,
-        child: ShadFocused(
-          focusNode: focusNode,
-          builder: (context, focused, child) {
-            return ShadDecorator(
-              focused: focused,
-              decoration: effectiveDecoration,
-              child: child!,
-            );
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.enter): () {
+              if (!widget.enabled) return;
+              onTap();
+            },
           },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Container(
-              width: effectiveWidth,
-              height: effectiveHeight,
-              decoration: BoxDecoration(
-                color: widget.value
-                    ? effectiveCheckedTrackColor
-                    : effectiveUncheckedTrackColor,
-                border: Border.all(
-                  width: effectiveMargin,
-                  color: Colors.transparent,
-                ),
-                borderRadius: effectiveRadius,
-              ),
-              alignment: Alignment.centerLeft,
-              child: Animate(
-                controller: controller,
-                autoPlay: false,
-                effects: [
-                  MoveEffect(
-                    begin: Offset.zero,
-                    end: Offset(transitionStep, 0),
-                    duration: effectiveDuration,
-                  ),
-                ],
-                child: Container(
-                  width: effectiveThumbSize,
-                  height: effectiveThumbSize,
-                  decoration: BoxDecoration(
-                    color: effectiveThumbColor,
-                    shape: BoxShape.circle,
+          child: ShadFocusable(
+            focusNode: focusNode,
+            builder: (context, focused, child) {
+              return ShadDecorator(
+                focused: focused,
+                decoration: effectiveDecoration,
+                child: child,
+              );
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: SizedBox(
+                width: effectiveWidth,
+                height: effectiveHeight,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.all(effectiveMargin),
+                    child: Animate(
+                      controller: controller,
+                      autoPlay: false,
+                      effects: [
+                        MoveEffect(
+                          begin: Offset.zero,
+                          end: Offset(transitionStep, 0),
+                          duration: effectiveDuration,
+                        ),
+                      ],
+                      child: SizedBox(
+                        width: effectiveThumbSize,
+                        height: effectiveThumbSize,
+                        child: ShadDecorator(
+                          decoration: ShadDecoration(
+                            color: effectiveThumbColor,
+                            shape: BoxShape.circle,
+                            merge: false,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -203,14 +222,7 @@ class _ShadSwitchState extends State<ShadSwitch>
       disabled: !widget.enabled,
       disabledOpacity: 1,
       child: GestureDetector(
-        onTap: widget.onChanged == null
-            ? null
-            : () {
-                widget.onChanged!(!widget.value);
-                if (!focusNode.hasFocus) {
-                  FocusScope.of(context).unfocus();
-                }
-              },
+        onTap: widget.onChanged == null ? null : onTap,
         child: Row(
           textDirection: widget.direction,
           mainAxisSize: MainAxisSize.min,
