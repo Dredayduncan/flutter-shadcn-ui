@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shadcn_ui/src/components/disabled.dart';
-import 'package:shadcn_ui/src/components/focused.dart';
+import 'package:shadcn_ui/src/raw_components/focusable.dart';
 import 'package:shadcn_ui/src/theme/components/decorator.dart';
 import 'package:shadcn_ui/src/theme/theme.dart';
 import 'package:shadcn_ui/src/utils/debug_check.dart';
@@ -98,7 +99,6 @@ class ShadRadio<T> extends StatefulWidget {
     this.size,
     this.circleSize,
     this.duration,
-    this.borderWidth,
     this.color,
     this.label,
     this.sublabel,
@@ -128,9 +128,6 @@ class ShadRadio<T> extends StatefulWidget {
 
   /// The color of the radio.
   final Color? color;
-
-  /// The border width of the radio, defaults to 1.
-  final double? borderWidth;
 
   /// An optional label for the radio, displayed on the right side if
   /// the [direction] is `TextDirection.ltr`.
@@ -176,18 +173,26 @@ class _ShadRadioState<T> extends State<ShadRadio<T>> {
     );
     final theme = ShadTheme.of(context);
     final inheritedRadioGroup = ShadRadioGroup.of<T>(context);
+
+    void onTap() {
+      inheritedRadioGroup.select(widget.value);
+      if (!focusNode.hasFocus) {
+        FocusScope.of(context).unfocus();
+      }
+    }
+
     final selected = inheritedRadioGroup.selected == widget.value;
     final enabled = widget.enabled && inheritedRadioGroup.widget.enabled;
 
     final effectiveDecoration =
-        widget.decoration ?? theme.radioTheme.decoration ?? theme.decoration;
+        (theme.radioTheme.decoration ?? const ShadDecoration())
+            .mergeWith(widget.decoration);
+
     final effectiveSize = widget.size ?? theme.radioTheme.size ?? 16;
     final effectiveCircleSize =
         widget.circleSize ?? theme.radioTheme.circleSize ?? 10;
     final effectiveColor =
         widget.color ?? theme.radioTheme.color ?? theme.colorScheme.primary;
-    final effectiveBorderWidth =
-        widget.borderWidth ?? theme.radioTheme.borderWidth ?? 1;
     final effectiveDuration =
         widget.duration ?? theme.radioTheme.duration ?? 100.milliseconds;
     final effectivePadding = widget.padding ??
@@ -199,27 +204,26 @@ class _ShadRadioState<T> extends State<ShadRadio<T>> {
       child: ShadDisabled(
         showForbiddenCursor: true,
         disabled: !enabled,
-        child: ShadFocused(
-          focusNode: focusNode,
-          builder: (context, focused, child) {
-            return ShadDecorator(
-              focused: focused,
-              decoration: effectiveDecoration,
-              child: child!,
-            );
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.enter): () {
+              if (!enabled) return;
+              onTap();
+            },
           },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: SizedBox.square(
-              dimension: effectiveSize,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    width: effectiveBorderWidth,
-                    color: effectiveColor,
-                  ),
-                  shape: BoxShape.circle,
-                ),
+          child: ShadFocusable(
+            focusNode: focusNode,
+            builder: (context, focused, child) {
+              return ShadDecorator(
+                focused: focused,
+                decoration: effectiveDecoration,
+                child: child,
+              );
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: SizedBox.square(
+                dimension: effectiveSize,
                 child: AnimatedSwitcher(
                   duration: effectiveDuration,
                   child: selected
@@ -247,18 +251,10 @@ class _ShadRadioState<T> extends State<ShadRadio<T>> {
       disabled: !enabled,
       disabledOpacity: 1,
       child: GestureDetector(
-        onTap: enabled
-            ? () {
-                inheritedRadioGroup.select(widget.value);
-                if (!focusNode.hasFocus) {
-                  FocusScope.of(context).unfocus();
-                }
-              }
-            : null,
+        onTap: enabled ? onTap : null,
         child: Row(
           textDirection: widget.direction,
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             radio,
             if (widget.label != null)

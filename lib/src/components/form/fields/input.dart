@@ -24,8 +24,7 @@ class ShadInputFormField extends ShadFormBuilderField<String> {
     void Function(String)? onChanged,
     super.valueTransformer,
     super.onReset,
-    super.decoration,
-    ShadDecoration? inputDecoration,
+    ShadDecoration? decoration,
     Widget? placeholder,
     TextMagnifierConfiguration magnifierConfiguration =
         TextMagnifierConfiguration.disabled,
@@ -67,6 +66,7 @@ class ShadInputFormField extends ShadFormBuilderField<String> {
     TextSelectionControls? selectionControls,
     DragStartBehavior dragStartBehavior = DragStartBehavior.start,
     GestureTapCallback? onTap,
+    bool onTapAlwaysCalled = false,
     TapRegionCallback? onTapOutside,
     MouseCursor? mouseCursor,
     ScrollPhysics? scrollPhysics,
@@ -82,8 +82,13 @@ class ShadInputFormField extends ShadFormBuilderField<String> {
     Color? selectionColor,
     Color? backgroundColor,
     EdgeInsets? padding,
-    Border? border,
-    BorderRadius? radius,
+    Widget? prefix,
+    Widget? suffix,
+    MainAxisAlignment? mainAxisAlignment,
+    CrossAxisAlignment? crossAxisAlignment,
+    TextStyle? placeholderStyle,
+    Alignment? placeholderAlignment,
+    EdgeInsets? inputPadding,
   }) : super(
           initialValue: controller != null ? controller.text : initialValue,
           validator: validator == null ? null : (v) => validator(v ?? ''),
@@ -96,7 +101,7 @@ class ShadInputFormField extends ShadFormBuilderField<String> {
               restorationId: restorationId,
               enabled: state.enabled,
               focusNode: state.focusNode,
-              decoration: inputDecoration,
+              decoration: decoration,
               style: style,
               cursorColor: cursorColor,
               selectionColor: selectionColor,
@@ -139,9 +144,10 @@ class ShadInputFormField extends ShadFormBuilderField<String> {
               enableInteractiveSelection: enableInteractiveSelection,
               undoController: undoController,
               spellCheckConfiguration: spellCheckConfiguration,
-              onTapOutside: onTapOutside,
               placeholder: placeholder,
               onTap: onTap,
+              onTapAlwaysCalled: onTapAlwaysCalled,
+              onTapOutside: onTapOutside,
               keyboardAppearance: keyboardAppearance,
               cursorOpacityAnimates: cursorOpacityAnimates,
               readOnly: readOnly,
@@ -153,8 +159,13 @@ class ShadInputFormField extends ShadFormBuilderField<String> {
               maxLength: maxLength,
               maxLengthEnforcement: maxLengthEnforcement,
               padding: padding,
-              border: border,
-              radius: radius,
+              prefix: prefix,
+              suffix: suffix,
+              mainAxisAlignment: mainAxisAlignment,
+              crossAxisAlignment: crossAxisAlignment,
+              placeholderStyle: placeholderStyle,
+              placeholderAlignment: placeholderAlignment,
+              inputPadding: inputPadding,
             );
           },
         );
@@ -176,7 +187,9 @@ class _ShadFormBuilderInputState
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController(text: value);
+    if (widget.controller == null) {
+      _controller = TextEditingController(text: value);
+    }
     controller.addListener(onControllerChanged);
   }
 
@@ -185,6 +198,17 @@ class _ShadFormBuilderInputState
     super.didChange(value);
     if (controller.text != value) {
       controller.text = value ?? '';
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ShadInputFormField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == null && widget.controller != null) {
+      _controller?.dispose();
+    }
+    if (oldWidget.controller != null && widget.controller == null) {
+      _controller = TextEditingController(text: value);
     }
   }
 

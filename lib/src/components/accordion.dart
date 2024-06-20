@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shadcn_ui/src/components/image.dart';
+import 'package:shadcn_ui/src/raw_components/focusable.dart';
 import 'package:shadcn_ui/src/theme/theme.dart';
 import 'package:shadcn_ui/src/utils/animation_builder.dart';
-import 'package:shadcn_ui/src/utils/extensions.dart';
+import 'package:shadcn_ui/src/utils/effects.dart';
+import 'package:shadcn_ui/src/utils/gesture_detector.dart';
 
 enum ShadAccordionType {
   single,
@@ -16,6 +19,7 @@ class ShadAccordion<T> extends StatefulWidget {
     super.key,
     required this.children,
     T? initialValue,
+    this.maintainState,
   })  : type = ShadAccordionType.single,
         initialValue = initialValue == null ? <T>[] : <T>[initialValue];
 
@@ -23,11 +27,13 @@ class ShadAccordion<T> extends StatefulWidget {
     super.key,
     required this.children,
     this.initialValue,
+    this.maintainState,
   }) : type = ShadAccordionType.multiple;
 
   final ShadAccordionType type;
   final Iterable<Widget> children;
   final List<T>? initialValue;
+  final bool? maintainState;
 
   @override
   State<ShadAccordion<T>> createState() => ShadAccordionState<T>();
@@ -35,6 +41,12 @@ class ShadAccordion<T> extends StatefulWidget {
 
 class ShadAccordionState<T> extends State<ShadAccordion<T>> {
   late List<T> values = widget.initialValue?.toList() ?? <T>[];
+
+  bool get maintainState {
+    return widget.maintainState ??
+        ShadTheme.of(context, listen: false).accordionTheme.maintainState ??
+        false;
+  }
 
   void toggle(T value) {
     setState(() {
@@ -59,10 +71,12 @@ class ShadAccordionState<T> extends State<ShadAccordion<T>> {
   Widget build(BuildContext context) {
     return ShadAccordionInheritedWidget<T>(
       data: this,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: widget.children.toList(),
+      child: FocusTraversalGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: widget.children.toList(),
+        ),
       ),
     );
   }
@@ -103,12 +117,13 @@ class ShadAccordionItem<T> extends StatefulWidget {
     this.icon,
     this.iconSrc,
     this.iconEffects,
-    this.transitionBuilder,
     this.padding,
     this.underlineTitleOnHover,
     this.titleStyle,
     this.curve,
     this.duration,
+    this.focusNode,
+    this.effects,
   });
 
   final T value;
@@ -118,13 +133,13 @@ class ShadAccordionItem<T> extends StatefulWidget {
   final Widget? icon;
   final ShadImageSrc? iconSrc;
   final List<Effect<dynamic>>? iconEffects;
-  final Widget Function(Animation<double> animation, Widget child)?
-      transitionBuilder;
   final EdgeInsets? padding;
   final bool? underlineTitleOnHover;
   final TextStyle? titleStyle;
   final Curve? curve;
   final Duration? duration;
+  final FocusNode? focusNode;
+  final List<Effect<dynamic>>? effects;
 
   @override
   State<ShadAccordionItem<T>> createState() => _ShadAccordionItemState<T>();
@@ -133,11 +148,38 @@ class ShadAccordionItem<T> extends StatefulWidget {
 class _ShadAccordionItemState<T> extends State<ShadAccordionItem<T>>
     with SingleTickerProviderStateMixin {
   final hovered = ValueNotifier(false);
+  FocusNode? _focusNode;
+
+  FocusNode get focusNode => widget.focusNode ?? _focusNode!;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.focusNode == null) _focusNode = FocusNode();
+    focusNode.addListener(onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant ShadAccordionItem<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != null && widget.focusNode == null) {
+      oldWidget.focusNode!.removeListener(onFocusChange);
+      _focusNode?.dispose();
+      _focusNode = FocusNode();
+      focusNode.addListener(onFocusChange);
+    }
+  }
 
   @override
   void dispose() {
+    focusNode.removeListener(onFocusChange);
+    _focusNode?.dispose();
     hovered.dispose();
     super.dispose();
+  }
+
+  void onFocusChange() {
+    hovered.value = focusNode.hasFocus;
   }
 
   @override
@@ -190,25 +232,25 @@ class _ShadAccordionItemState<T> extends State<ShadAccordionItem<T>>
         theme.accordionTheme.padding ??
         const EdgeInsets.symmetric(vertical: 16);
 
-    final effectiveTransitionBuilder = widget.transitionBuilder ??
-        theme.accordionTheme.transitionBuilder ??
-        (animation, child) {
-          return AnimatedPadding(
-            padding: EdgeInsets.only(bottom: animation.value * 16),
-            curve: Curves.fastEaseInToSlowEaseOut,
-            duration: effectiveDuration.divide(2),
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(animation),
-              child: SizeTransition(
-                sizeFactor: animation,
-                child: child,
-              ),
-            ),
-          );
-        };
+    final effectiveEffects = widget.effects ??
+        theme.accordionTheme.effects ??
+        [
+          PaddingEffect(
+            padding: const EdgeInsets.only(bottom: 8),
+            curve: effectiveCurve,
+            duration: effectiveDuration,
+          ),
+          SlideEffect(
+            curve: effectiveCurve,
+            begin: const Offset(0, -1),
+            end: Offset.zero,
+            duration: effectiveDuration,
+          ),
+          SizeEffect(
+            curve: effectiveCurve,
+            duration: effectiveDuration,
+          ),
+        ];
 
     return ShadAnimationBuilder(
       duration: effectiveDuration,
@@ -220,56 +262,67 @@ class _ShadAccordionItemState<T> extends State<ShadAccordionItem<T>>
           // animates the closed item, to hide it
           controller.reverse();
         }
-        final animation = CurvedAnimation(
-          parent: controller.view,
-          curve: effectiveCurve,
-        );
+
+        final closed = !expanded && controller.isDismissed;
+        final shouldRemoveChild = closed && !inherited.maintainState;
 
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            MouseRegion(
-              onEnter: (_) => hovered.value = true,
-              onExit: (_) => hovered.value = false,
+            ShadGestureDetector(
               cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  inherited.toggle(widget.value);
-                },
-                child: Padding(
-                  padding: effectivePadding,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ValueListenableBuilder(
-                        valueListenable: hovered,
-                        builder: (context, hovered, child) {
-                          return DefaultTextStyle(
-                            style: effectiveTitleStyle.copyWith(
-                              decoration:
-                                  hovered && effectiveUnderlineTitleOnHover
-                                      ? TextDecoration.underline
-                                      : null,
-                            ),
-                            child: child!,
+              onHoverChange: (value) => hovered.value = value,
+              behavior: HitTestBehavior.opaque,
+              onTap: () => inherited.toggle(widget.value),
+              child: Padding(
+                padding: effectivePadding,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CallbackShortcuts(
+                      bindings: {
+                        const SingleActivator(LogicalKeyboardKey.enter): () {
+                          inherited.toggle(widget.value);
+                        },
+                      },
+                      child: ShadFocusable(
+                        focusNode: focusNode,
+                        builder: (context, focused, child) {
+                          return ValueListenableBuilder(
+                            valueListenable: hovered,
+                            builder: (context, hovered, child) {
+                              return DefaultTextStyle(
+                                style: effectiveTitleStyle.copyWith(
+                                  decoration:
+                                      hovered && effectiveUnderlineTitleOnHover
+                                          ? TextDecoration.underline
+                                          : null,
+                                ),
+                                child: child!,
+                              );
+                            },
+                            child: widget.title,
                           );
                         },
-                        child: widget.title,
                       ),
-                      Animate(
-                        target: expanded ? 1 : 0,
-                        effects: effectiveIconEffects,
-                        child: effectiveIcon,
-                      ),
-                    ],
-                  ),
+                    ),
+                    Animate(
+                      target: expanded ? 1 : 0,
+                      effects: effectiveIconEffects,
+                      child: effectiveIcon,
+                    ),
+                  ],
                 ),
               ),
             ),
-            effectiveTransitionBuilder(animation, widget.content),
+            if (!shouldRemoveChild)
+              Animate(
+                controller: controller,
+                effects: effectiveEffects,
+                child: widget.content,
+              ),
             effectiveSeparator,
           ],
         );

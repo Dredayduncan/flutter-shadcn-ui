@@ -35,7 +35,6 @@ export 'src/components/resizable.dart';
 
 // Raw Components
 export 'src/raw_components/portal.dart';
-export 'src/raw_components/same_width_column.dart';
 
 // App Themes & Color Schemes
 export 'src/theme/color_scheme/base.dart';
@@ -55,6 +54,7 @@ export 'src/theme/data.dart';
 export 'src/theme/theme.dart';
 export 'src/theme/themes/base.dart';
 export 'src/theme/themes/shadows.dart';
+export 'src/theme/themes/component_defaults.dart';
 
 // Component Themes
 export 'src/theme/components/accordion.dart';
@@ -90,10 +90,9 @@ export 'src/utils/animation_builder.dart';
 export 'src/utils/extensions.dart';
 export 'src/utils/provider.dart' hide ProviderReadExt, ProviderWatchExt;
 export 'src/utils/gesture_detector.dart';
+export 'src/utils/effects.dart';
 
 // External libraries
-export 'package:flutter_animate/flutter_animate.dart';
-export 'package:boxy/boxy.dart';
-export 'package:boxy/flex.dart';
+export 'package:flutter_animate/flutter_animate.dart' hide Effect;
 export 'package:lucide_icons_flutter/lucide_icons.dart';
 export 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';

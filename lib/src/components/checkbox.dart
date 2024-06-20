@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shadcn_ui/src/components/disabled.dart';
-import 'package:shadcn_ui/src/components/focused.dart';
 import 'package:shadcn_ui/src/components/image.dart';
+import 'package:shadcn_ui/src/raw_components/focusable.dart';
 import 'package:shadcn_ui/src/theme/components/decorator.dart';
 import 'package:shadcn_ui/src/theme/theme.dart';
 import 'package:shadcn_ui/src/utils/debug_check.dart';
@@ -18,10 +18,8 @@ class ShadCheckbox extends StatefulWidget {
     this.focusNode,
     this.decoration,
     this.size,
-    this.radius,
     this.duration,
     this.icon,
-    this.borderWidth,
     this.color,
     this.label,
     this.sublabel,
@@ -44,9 +42,6 @@ class ShadCheckbox extends StatefulWidget {
   /// The decoration of the checkbox.
   final ShadDecoration? decoration;
 
-  /// The radius of the checkbox.
-  final BorderRadius? radius;
-
   /// The size of the checkbox, defaults to 16.
   final double? size;
 
@@ -58,9 +53,6 @@ class ShadCheckbox extends StatefulWidget {
 
   /// The color of the checkbox.
   final Color? color;
-
-  /// The border width of the checkbox, defaults to 1.
-  final double? borderWidth;
 
   /// An optional label for the checkbox, displayed on the right side if
   /// the [direction] is `TextDirection.ltr`.
@@ -97,26 +89,37 @@ class _ShadCheckboxState extends State<ShadCheckbox> {
     super.dispose();
   }
 
+  void onTap() {
+    if (widget.onChanged == null) return;
+
+    widget.onChanged!(!widget.value);
+    if (!focusNode.hasFocus) {
+      FocusScope.of(context).unfocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasShadTheme(context));
     final theme = ShadTheme.of(context);
 
-    final effectiveDecoration =
-        widget.decoration ?? theme.checkboxTheme.decoration ?? theme.decoration;
+    final effectiveColor =
+        widget.color ?? theme.checkboxTheme.color ?? theme.colorScheme.primary;
+
+    final effectiveDecoration = (theme.checkboxTheme.decoration ??
+            const ShadDecoration())
+        .mergeWith(widget.decoration)
+        .copyWith(color: widget.value ? effectiveColor : Colors.transparent);
+
     final effectiveSize = widget.size ?? theme.checkboxTheme.size ?? 16;
-    final effectiveRadius =
-        widget.radius ?? theme.checkboxTheme.radius ?? theme.radius;
+
     final effectiveIcon = widget.icon ??
         ShadImage.square(
           LucideIcons.check,
           color: theme.colorScheme.primaryForeground,
           size: effectiveSize,
         );
-    final effectiveColor =
-        widget.color ?? theme.checkboxTheme.color ?? theme.colorScheme.primary;
-    final effectiveBorderWidth =
-        widget.borderWidth ?? theme.checkboxTheme.borderWidth ?? 1;
+
     final effectiveDuration =
         widget.duration ?? theme.checkboxTheme.duration ?? 100.milliseconds;
     final effectivePadding = widget.padding ??
@@ -128,32 +131,33 @@ class _ShadCheckboxState extends State<ShadCheckbox> {
       child: ShadDisabled(
         showForbiddenCursor: true,
         disabled: !widget.enabled,
-        child: ShadFocused(
-          focusNode: focusNode,
-          builder: (context, focused, child) {
-            return ShadDecorator(
-              focused: focused,
-              decoration: effectiveDecoration,
-              child: child!,
-            );
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.enter): () {
+              if (!widget.enabled) return;
+              onTap();
+            },
           },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Container(
-              width: effectiveSize,
-              height: effectiveSize,
-              decoration: BoxDecoration(
-                color: widget.value ? effectiveColor : null,
-                border: Border.all(
-                  width: effectiveBorderWidth,
-                  color: effectiveColor,
+          child: ShadFocusable(
+            focusNode: focusNode,
+            builder: (context, focused, child) {
+              return ShadDecorator(
+                focused: focused,
+                decoration: effectiveDecoration,
+                child: child,
+              );
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: SizedBox(
+                width: effectiveSize,
+                height: effectiveSize,
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: effectiveDuration,
+                    child: widget.value ? effectiveIcon : const SizedBox(),
+                  ),
                 ),
-                borderRadius: effectiveRadius,
-              ),
-              alignment: Alignment.center,
-              child: AnimatedSwitcher(
-                duration: effectiveDuration,
-                child: widget.value ? effectiveIcon : const SizedBox(),
               ),
             ),
           ),
@@ -166,14 +170,7 @@ class _ShadCheckboxState extends State<ShadCheckbox> {
       disabled: !widget.enabled,
       disabledOpacity: 1,
       child: GestureDetector(
-        onTap: widget.onChanged == null
-            ? null
-            : () {
-                widget.onChanged!(!widget.value);
-                if (!focusNode.hasFocus) {
-                  FocusScope.of(context).unfocus();
-                }
-              },
+        onTap: widget.onChanged == null ? null : onTap,
         child: Row(
           textDirection: widget.direction,
           mainAxisSize: MainAxisSize.min,

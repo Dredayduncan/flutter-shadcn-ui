@@ -11,6 +11,7 @@ ShadcnUI ported in Flutter.
 Awesome UI components for Flutter, fully customizable.
 
 ## Documentation
+
 See the [documentation](https://mariuti.com/shadcn-ui/) to interact with the components and see the code.
 
 ## Progress
@@ -29,7 +30,7 @@ See the [documentation](https://mariuti.com/shadcn-ui/) to interact with the com
 - [ ] Carousel
 - [x] [Checkbox](https://mariuti.com/shadcn-ui/components/checkbox/)
 - [ ] Collapsible
-- [ ] Combobox
+- [x] [Combobox](https://mariuti.com/shadcn-ui/components/select/#with-search)
 - [ ] Command
 - [ ] Context Menu
 - [ ] Data Table
@@ -64,3 +65,7 @@ See the [documentation](https://mariuti.com/shadcn-ui/) to interact with the com
 - [ ] Toggle
 - [ ] ToggleGroup
 - [x] [Tooltip](https://mariuti.com/shadcn-ui/components/tooltip/)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=nank1ro/flutter-shadcn-ui&type=Date)](https://star-history.com/#nank1ro/flutter-shadcn-ui&Date)

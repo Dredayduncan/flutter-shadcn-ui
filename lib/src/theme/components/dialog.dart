@@ -33,6 +33,10 @@ class ShadDialogTheme {
     this.titleTextAlign,
     this.descriptionTextAlign,
     this.alignment,
+    this.mainAxisAlignment,
+    this.crossAxisAlignment,
+    this.scrollable,
+    this.scrollPadding,
   });
 
   final bool merge;
@@ -58,6 +62,10 @@ class ShadDialogTheme {
   final TextAlign? titleTextAlign;
   final TextAlign? descriptionTextAlign;
   final Alignment? alignment;
+  final MainAxisAlignment? mainAxisAlignment;
+  final CrossAxisAlignment? crossAxisAlignment;
+  final bool? scrollable;
+  final EdgeInsets? scrollPadding;
 
   static ShadDialogTheme lerp(
     ShadDialogTheme a,
@@ -91,6 +99,10 @@ class ShadDialogTheme {
       titleTextAlign: b.titleTextAlign,
       descriptionTextAlign: b.descriptionTextAlign,
       alignment: Alignment.lerp(a.alignment, b.alignment, t),
+      mainAxisAlignment: t < 0.5 ? a.mainAxisAlignment : b.mainAxisAlignment,
+      crossAxisAlignment: t < 0.5 ? a.crossAxisAlignment : b.crossAxisAlignment,
+      scrollable: t < 0.5 ? a.scrollable : b.scrollable,
+      scrollPadding: EdgeInsets.lerp(a.scrollPadding, b.scrollPadding, t),
     );
   }
 
@@ -118,6 +130,10 @@ class ShadDialogTheme {
     TextAlign? titleTextAlign,
     TextAlign? descriptionTextAlign,
     Alignment? alignment,
+    MainAxisAlignment? mainAxisAlignment,
+    CrossAxisAlignment? crossAxisAlignment,
+    bool? scrollable,
+    EdgeInsets? scrollPadding,
   }) {
     return ShadDialogTheme(
       merge: merge ?? this.merge,
@@ -143,6 +159,10 @@ class ShadDialogTheme {
       titleTextAlign: titleTextAlign,
       descriptionTextAlign: descriptionTextAlign,
       alignment: alignment,
+      mainAxisAlignment: mainAxisAlignment,
+      crossAxisAlignment: crossAxisAlignment,
+      scrollable: scrollable,
+      scrollPadding: scrollPadding,
     );
   }
 
@@ -172,6 +192,10 @@ class ShadDialogTheme {
       titleTextAlign: other.titleTextAlign,
       descriptionTextAlign: other.descriptionTextAlign,
       alignment: other.alignment,
+      mainAxisAlignment: other.mainAxisAlignment,
+      crossAxisAlignment: other.crossAxisAlignment,
+      scrollable: other.scrollable,
+      scrollPadding: other.scrollPadding,
     );
   }
 
@@ -202,7 +226,11 @@ class ShadDialogTheme {
         other.descriptionStyle == descriptionStyle &&
         other.titleTextAlign == titleTextAlign &&
         other.descriptionTextAlign == descriptionTextAlign &&
-        other.alignment == alignment;
+        other.alignment == alignment &&
+        other.mainAxisAlignment == mainAxisAlignment &&
+        other.crossAxisAlignment == crossAxisAlignment &&
+        other.scrollable == scrollable &&
+        other.scrollPadding == scrollPadding;
   }
 
   @override
@@ -229,6 +257,10 @@ class ShadDialogTheme {
         descriptionStyle.hashCode ^
         titleTextAlign.hashCode ^
         descriptionTextAlign.hashCode ^
-        alignment.hashCode;
+        alignment.hashCode ^
+        mainAxisAlignment.hashCode ^
+        crossAxisAlignment.hashCode ^
+        scrollable.hashCode ^
+        scrollPadding.hashCode;
   }
 }

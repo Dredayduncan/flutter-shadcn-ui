@@ -41,8 +41,6 @@ class ShadApp extends StatefulWidget {
     this.localeResolutionCallback,
     this.supportedLocales = const <Locale>[Locale('en', 'US')],
     this.showPerformanceOverlay = false,
-    this.checkerboardRasterCacheImages = false,
-    this.checkerboardOffscreenLayers = false,
     this.showSemanticsDebugger = false,
     this.debugShowCheckedModeBanner = true,
     this.shortcuts,
@@ -84,8 +82,6 @@ class ShadApp extends StatefulWidget {
     this.localeResolutionCallback,
     this.supportedLocales = const <Locale>[Locale('en', 'US')],
     this.showPerformanceOverlay = false,
-    this.checkerboardRasterCacheImages = false,
-    this.checkerboardOffscreenLayers = false,
     this.showSemanticsDebugger = false,
     this.debugShowCheckedModeBanner = true,
     this.shortcuts,
@@ -127,8 +123,6 @@ class ShadApp extends StatefulWidget {
     this.localeResolutionCallback,
     this.supportedLocales = const <Locale>[Locale('en', 'US')],
     this.showPerformanceOverlay = false,
-    this.checkerboardRasterCacheImages = false,
-    this.checkerboardOffscreenLayers = false,
     this.showSemanticsDebugger = false,
     this.debugShowCheckedModeBanner = true,
     this.shortcuts,
@@ -170,8 +164,6 @@ class ShadApp extends StatefulWidget {
     this.localeResolutionCallback,
     this.supportedLocales = const <Locale>[Locale('en', 'US')],
     this.showPerformanceOverlay = false,
-    this.checkerboardRasterCacheImages = false,
-    this.checkerboardOffscreenLayers = false,
     this.showSemanticsDebugger = false,
     this.debugShowCheckedModeBanner = true,
     this.shortcuts,
@@ -213,8 +205,6 @@ class ShadApp extends StatefulWidget {
     this.localeResolutionCallback,
     this.supportedLocales = const <Locale>[Locale('en', 'US')],
     this.showPerformanceOverlay = false,
-    this.checkerboardRasterCacheImages = false,
-    this.checkerboardOffscreenLayers = false,
     this.showSemanticsDebugger = false,
     this.debugShowCheckedModeBanner = true,
     this.shortcuts,
@@ -256,8 +246,6 @@ class ShadApp extends StatefulWidget {
     this.localeResolutionCallback,
     this.supportedLocales = const <Locale>[Locale('en', 'US')],
     this.showPerformanceOverlay = false,
-    this.checkerboardRasterCacheImages = false,
-    this.checkerboardOffscreenLayers = false,
     this.showSemanticsDebugger = false,
     this.debugShowCheckedModeBanner = true,
     this.shortcuts,
@@ -444,12 +432,6 @@ class ShadApp extends StatefulWidget {
   ///  * <https://flutter.dev/debugging/#performanceoverlay>
   final bool showPerformanceOverlay;
 
-  /// Turns on checkerboarding of raster cache images.
-  final bool checkerboardRasterCacheImages;
-
-  /// Turns on checkerboarding of layers rendered to offscreen bitmaps.
-  final bool checkerboardOffscreenLayers;
-
   /// Turns on an overlay that shows the accessibility information
   /// reported by the framework.
   final bool showSemanticsDebugger;
@@ -604,7 +586,6 @@ class _ShadAppState extends State<ShadApp> {
       late ShadThemeData result;
       if (useDarkStyle) {
         result = widget.darkTheme ??
-            widget.theme ??
             ShadThemeData(
               colorScheme: const ShadSlateColorScheme.dark(),
               brightness: Brightness.dark,
@@ -634,7 +615,10 @@ class _ShadAppState extends State<ShadApp> {
         onSecondary: themeData.colorScheme.secondaryForeground,
         error: themeData.colorScheme.destructive,
         onError: themeData.colorScheme.destructiveForeground,
+        // Keep deprecated members for backwards compatibility
+        // ignore: deprecated_member_use
         background: themeData.colorScheme.background,
+        // ignore: deprecated_member_use
         onBackground: themeData.colorScheme.foreground,
         surface: themeData.colorScheme.card,
         onSurface: themeData.colorScheme.cardForeground,
@@ -713,9 +697,6 @@ class _ShadAppState extends State<ShadApp> {
               localeListResolutionCallback: widget.localeListResolutionCallback,
               supportedLocales: widget.supportedLocales,
               showPerformanceOverlay: widget.showPerformanceOverlay,
-              checkerboardRasterCacheImages:
-                  widget.checkerboardRasterCacheImages,
-              checkerboardOffscreenLayers: widget.checkerboardOffscreenLayers,
               showSemanticsDebugger: widget.showSemanticsDebugger,
               debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
               shortcuts: widget.shortcuts,
@@ -747,8 +728,6 @@ class _ShadAppState extends State<ShadApp> {
             localeListResolutionCallback: widget.localeListResolutionCallback,
             supportedLocales: widget.supportedLocales,
             showPerformanceOverlay: widget.showPerformanceOverlay,
-            checkerboardRasterCacheImages: widget.checkerboardRasterCacheImages,
-            checkerboardOffscreenLayers: widget.checkerboardOffscreenLayers,
             showSemanticsDebugger: widget.showSemanticsDebugger,
             debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
             shortcuts: widget.shortcuts,
@@ -782,8 +761,6 @@ class _ShadAppState extends State<ShadApp> {
             localeListResolutionCallback: widget.localeListResolutionCallback,
             supportedLocales: widget.supportedLocales,
             showPerformanceOverlay: widget.showPerformanceOverlay,
-            checkerboardRasterCacheImages: widget.checkerboardRasterCacheImages,
-            checkerboardOffscreenLayers: widget.checkerboardOffscreenLayers,
             showSemanticsDebugger: widget.showSemanticsDebugger,
             debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
             shortcuts: widget.shortcuts,
@@ -811,8 +788,6 @@ class _ShadAppState extends State<ShadApp> {
           localeListResolutionCallback: widget.localeListResolutionCallback,
           supportedLocales: widget.supportedLocales,
           showPerformanceOverlay: widget.showPerformanceOverlay,
-          checkerboardRasterCacheImages: widget.checkerboardRasterCacheImages,
-          checkerboardOffscreenLayers: widget.checkerboardOffscreenLayers,
           showSemanticsDebugger: widget.showSemanticsDebugger,
           debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
           shortcuts: widget.shortcuts,
@@ -841,9 +816,6 @@ class _ShadAppState extends State<ShadApp> {
               localeListResolutionCallback: widget.localeListResolutionCallback,
               supportedLocales: widget.supportedLocales,
               showPerformanceOverlay: widget.showPerformanceOverlay,
-              checkerboardRasterCacheImages:
-                  widget.checkerboardRasterCacheImages,
-              checkerboardOffscreenLayers: widget.checkerboardOffscreenLayers,
               showSemanticsDebugger: widget.showSemanticsDebugger,
               debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
               shortcuts: widget.shortcuts,
@@ -874,8 +846,6 @@ class _ShadAppState extends State<ShadApp> {
             localeListResolutionCallback: widget.localeListResolutionCallback,
             supportedLocales: widget.supportedLocales,
             showPerformanceOverlay: widget.showPerformanceOverlay,
-            checkerboardRasterCacheImages: widget.checkerboardRasterCacheImages,
-            checkerboardOffscreenLayers: widget.checkerboardOffscreenLayers,
             showSemanticsDebugger: widget.showSemanticsDebugger,
             debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
             shortcuts: widget.shortcuts,
