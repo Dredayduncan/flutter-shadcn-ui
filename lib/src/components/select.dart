@@ -507,7 +507,8 @@ class ShadSelectState<T> extends State<ShadSelect<T>> {
                   // set the initial value for showScrollToBottom and
                   // showScrollToTop, after the popover is rendered
                   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                    if (scrollController.hasClients) {
+                    if (scrollController.hasClients &&
+                        scrollController.position.hasContentDimensions) {
                       showScrollToBottom.value = scrollController.offset <
                           scrollController.position.maxScrollExtent;
                       showScrollToTop.value = scrollController.offset > 0;
